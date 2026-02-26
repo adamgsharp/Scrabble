@@ -1,0 +1,56 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:   # allow manual trigger from the Actions tab
+
+# Grant the GITHUB_TOKEN the rights needed to deploy Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deployment at a time; don't cancel a running deploy
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Scrabble word list
+        run: |
+          if [ ! -f words.txt ]; then
+            echo "Downloading word list..."
+            curl -fsSL \
+              "https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt" \
+              | python3 -c "
+import sys, re
+words = sorted({w.strip().upper() for w in sys.stdin if re.match(r'^[a-z]{2,15}$', w.strip())})
+sys.stdout.write('\n'.join(words) + '\n')
+" > words.txt \
+            || echo "Download failed — app will use CDN fallback at runtime"
+          fi
+          echo "Word list: $(wc -l < words.txt 2>/dev/null || echo 0) words"
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload the whole repo root (index.html, styles.css, app.js, words.txt)
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

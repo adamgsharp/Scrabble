@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrabble Word Solver</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>Scrabble Word Solver</h1>
+            <div class="word-list-status" id="wordListStatus">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Loading word list...</span>
+            </div>
+        </header>
+
+        <main>
+            <!-- Tile Rack -->
+            <section class="card">
+                <div class="section-header">
+                    <h2>Your Tiles</h2>
+                    <span class="section-hint">Click a tile to set its position in the word</span>
+                </div>
+                <div class="rack-wrapper">
+                    <div class="tile-rack" id="tileRack"></div>
+                </div>
+                <div class="rack-controls">
+                    <button class="btn btn-ghost" id="clearRackBtn">Clear Tiles</button>
+                    <button class="btn btn-ghost" id="randomTilesBtn">Random Tiles</button>
+                </div>
+            </section>
+
+            <!-- Board Tiles -->
+            <section class="card">
+                <div class="section-header">
+                    <h2>Board Tiles</h2>
+                    <span class="section-hint">Letters already on the board you want to play through</span>
+                </div>
+                <div class="board-input-row">
+                    <div class="board-tiles-display" id="boardTilesDisplay">
+                        <span class="board-placeholder">None</span>
+                    </div>
+                    <input
+                        type="text"
+                        id="boardTilesInput"
+                        class="board-input"
+                        placeholder="e.g. CAT"
+                        maxlength="15"
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="characters"
+                        spellcheck="false"
+                    >
+                    <button class="btn btn-ghost btn-sm" id="clearBoardBtn">Clear</button>
+                </div>
+            </section>
+
+            <!-- Solve -->
+            <section class="solve-section">
+                <button class="btn btn-primary btn-large" id="solveBtn">
+                    <span>Find Words</span>
+                </button>
+            </section>
+
+            <!-- Results -->
+            <section class="card results-card" id="resultsCard" style="display:none">
+                <div class="results-header">
+                    <div>
+                        <h2>Results</h2>
+                        <span class="results-count" id="resultsCount"></span>
+                    </div>
+                    <div class="sort-row">
+                        <label for="sortSelect">Sort by</label>
+                        <select id="sortSelect" class="sort-select">
+                            <option value="score">Score (high → low)</option>
+                            <option value="length">Length (long → short)</option>
+                            <option value="alpha">A → Z</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="results-grid" id="resultsGrid"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Tile Action Modal -->
+    <div class="modal-backdrop" id="tileModalBackdrop" style="display:none" aria-modal="true" role="dialog">
+        <div class="modal tile-modal">
+            <div class="modal-header">
+                <h3>Tile Options</h3>
+                <button class="btn-close" id="closeTileModal" aria-label="Close">&#x2715;</button>
+            </div>
+            <div class="modal-tile-preview" id="modalTilePreview"></div>
+            <div class="position-section">
+                <p class="position-label">Position from <strong>start</strong>:</p>
+                <div class="position-buttons" id="posFromStart"></div>
+            </div>
+            <div class="position-section">
+                <p class="position-label">Position from <strong>end</strong>:</p>
+                <div class="position-buttons" id="posFromEnd"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" id="clearPosBtn">Clear Position</button>
+                <button class="btn btn-danger" id="removeTileBtn">Remove Tile</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Letter Picker Modal -->
+    <div class="modal-backdrop" id="letterModalBackdrop" style="display:none" aria-modal="true" role="dialog">
+        <div class="modal letter-modal">
+            <div class="modal-header">
+                <h3 id="letterModalTitle">Choose a Letter</h3>
+                <button class="btn-close" id="closeLetterModal" aria-label="Close">&#x2715;</button>
+            </div>
+            <div class="letter-grid" id="letterGrid"></div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost btn-full" id="blankTileBtn">
+                    &#x2751; Blank tile (wild)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

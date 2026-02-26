@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, claude/**]
   workflow_dispatch:   # allow manual trigger from the Actions tab
 
 # Grant the GITHUB_TOKEN the rights needed to deploy Pages

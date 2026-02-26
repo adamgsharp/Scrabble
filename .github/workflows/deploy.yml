@@ -28,13 +28,11 @@ jobs:
         run: |
           if [ ! -f words.txt ]; then
             echo "Downloading word list..."
-            curl -fsSL \
-              "https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt" \
-              | python3 -c "
-import sys, re
-words = sorted({w.strip().upper() for w in sys.stdin if re.match(r'^[a-z]{2,15}$', w.strip())})
-sys.stdout.write('\n'.join(words) + '\n')
-" > words.txt \
+            curl -fsSL "https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt" \
+              -o /tmp/raw_words.txt \
+            && grep -E '^[a-z]{2,15}$' /tmp/raw_words.txt \
+              | tr 'a-z' 'A-Z' \
+              | sort -u > words.txt \
             || echo "Download failed — app will use CDN fallback at runtime"
           fi
           echo "Word list: $(wc -l < words.txt 2>/dev/null || echo 0) words"

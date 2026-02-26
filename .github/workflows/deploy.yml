@@ -17,17 +17,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  # ── Job 1: assemble the site ──────────────────────────────────────────────
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Scrabble word list
+      - name: Download Scrabble word list (if not committed)
         run: |
           if [ ! -f words.txt ]; then
             echo "Downloading word list..."
@@ -45,12 +42,21 @@ sys.stdout.write('\n'.join(words) + '\n')
       - name: Configure Pages
         uses: actions/configure-pages@v4
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload the whole repo root (index.html, styles.css, app.js, words.txt)
+          # Deploy the repo root (index.html, styles.css, app.js, words.txt)
           path: '.'
 
+  # ── Job 2: publish the artifact ───────────────────────────────────────────
+  deploy:
+    needs: build          # wait for the build job to upload the artifact
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
       - name: Deploy to GitHub Pages
-        id: deploy
+        id: deployment
         uses: actions/deploy-pages@v4

@@ -16,6 +16,7 @@ let wordSet = null;
 let selectedTileIndex = null;   // which rack tile the position modal is open for
 let pendingSlotIndex = null;    // which rack slot the letter picker is for (null = new tile)
 let currentResults = [];
+let boardPosition = null;       // { type:'start'|'end', n:1..15 } | null — where board tiles appear in word
 
 // ─── DOM shortcuts ───────────────────────
 const $ = id => document.getElementById(id);
@@ -121,12 +122,59 @@ function setupBoardTilesInput() {
     inp.addEventListener('input', () => {
         inp.value = inp.value.toUpperCase().replace(/[^A-Z]/g, '');
         renderBoardTiles(inp.value);
+        updateBoardPositionVisibility();
     });
 
     $('clearBoardBtn').addEventListener('click', () => {
         inp.value = '';
+        boardPosition = null;
         renderBoardTiles('');
+        updateBoardPositionVisibility();
     });
+
+    $('clearBoardPosBtn').addEventListener('click', () => {
+        boardPosition = null;
+        buildBoardPosBtns('boardPosFromStart', 'start');
+        buildBoardPosBtns('boardPosFromEnd',   'end');
+        renderBoardTiles(inp.value);
+    });
+
+    buildBoardPosBtns('boardPosFromStart', 'start');
+    buildBoardPosBtns('boardPosFromEnd',   'end');
+}
+
+function buildBoardPosBtns(containerId, type) {
+    const labels = {
+        start: ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th','13th','14th','15th'],
+        end:   ['Last','2nd-last','3rd-last','4th-last','5th-last','6th-last','7th-last']
+    };
+    const maxN = type === 'start' ? 15 : 7;
+    const container = $(containerId);
+    container.innerHTML = '';
+    for (let n = 1; n <= maxN; n++) {
+        const btn = document.createElement('button');
+        btn.className = 'pos-btn' + (boardPosition && boardPosition.type === type && boardPosition.n === n ? ' active' : '');
+        btn.textContent = labels[type][n - 1] || `${n}`;
+        btn.addEventListener('click', () => setBoardPosition(type, n));
+        container.appendChild(btn);
+    }
+}
+
+function setBoardPosition(type, n) {
+    boardPosition = { type, n };
+    buildBoardPosBtns('boardPosFromStart', 'start');
+    buildBoardPosBtns('boardPosFromEnd',   'end');
+    renderBoardTiles($('boardTilesInput').value);
+}
+
+function updateBoardPositionVisibility() {
+    const hasBoard = $('boardTilesInput').value.length > 0;
+    $('boardPositionSection').style.display = hasBoard ? 'block' : 'none';
+    if (!hasBoard) {
+        boardPosition = null;
+        buildBoardPosBtns('boardPosFromStart', 'start');
+        buildBoardPosBtns('boardPosFromEnd',   'end');
+    }
 }
 
 function renderBoardTiles(str) {
@@ -135,12 +183,16 @@ function renderBoardTiles(str) {
         display.innerHTML = '<span class="board-placeholder">None</span>';
         return;
     }
-    display.innerHTML = str.split('').map(ch => `
+    const tileHtml = str.split('').map(ch => `
         <div class="board-tile">
             <span class="tile-letter">${ch}</span>
             <span class="tile-points">${TILE_VALUES[ch] ?? 0}</span>
         </div>
     `).join('');
+    const badge = boardPosition
+        ? `<span class="board-pos-badge">${formatPos(boardPosition)}</span>`
+        : '';
+    display.innerHTML = tileHtml + badge;
 }
 
 // ─────────────────────────────────────────
@@ -370,8 +422,18 @@ function findWords(handTiles, boardStr) {
         // ── 1. Quick containment check for board tiles ────────
         let boardStart = -1;
         if (boardStr) {
-            boardStart = word.indexOf(boardStr);
-            if (boardStart === -1) continue;
+            if (boardPosition) {
+                // Constrain the exact position of the board tile sequence
+                const { type, n } = boardPosition;
+                boardStart = type === 'start'
+                    ? n - 1                                          // n=1 → index 0
+                    : word.length - boardStr.length - (n - 1);      // n=1 → ends at last letter
+                if (boardStart < 0 || boardStart + boardStr.length > word.length) continue;
+                if (word.slice(boardStart, boardStart + boardStr.length) !== boardStr) continue;
+            } else {
+                boardStart = word.indexOf(boardStr);
+                if (boardStart === -1) continue;
+            }
         }
 
         // ── 2. Compute letters needed from hand ───────────────

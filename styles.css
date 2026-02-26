@@ -304,6 +304,41 @@ body {
 .board-tile .tile-letter { font-size: 1.2rem; }
 .board-tile .tile-points { font-size: 0.55rem; }
 
+.board-pos-badge {
+    align-self: center;
+    font-size: 0.72rem;
+    font-family: sans-serif;
+    font-weight: 700;
+    background: var(--board-green);
+    color: white;
+    border-radius: 4px;
+    padding: 2px 6px;
+    line-height: 1.6;
+    flex-shrink: 0;
+}
+
+.board-position-section {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.board-pos-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.board-pos-row .position-label {
+    min-width: 150px;
+    margin-bottom: 0;
+    padding-top: 6px;
+}
+
 .board-input {
     border: 2px solid var(--border);
     border-radius: 6px;

@@ -36,7 +36,7 @@
             <section class="card">
                 <div class="section-header">
                     <h2>Board Tiles</h2>
-                    <span class="section-hint">Letters already on the board you want to play through</span>
+                    <span class="section-hint">Letters already on the board · set position to constrain placement</span>
                 </div>
                 <div class="board-input-row">
                     <div class="board-tiles-display" id="boardTilesDisplay">
@@ -54,6 +54,19 @@
                         spellcheck="false"
                     >
                     <button class="btn btn-ghost btn-sm" id="clearBoardBtn">Clear</button>
+                </div>
+                <div class="board-position-section" id="boardPositionSection" style="display:none">
+                    <div class="board-pos-row">
+                        <span class="position-label">Position from <strong>start</strong>:</span>
+                        <div class="position-buttons" id="boardPosFromStart"></div>
+                    </div>
+                    <div class="board-pos-row">
+                        <span class="position-label">Position from <strong>end</strong>:</span>
+                        <div class="position-buttons" id="boardPosFromEnd"></div>
+                    </div>
+                    <div>
+                        <button class="btn btn-ghost btn-sm" id="clearBoardPosBtn">Clear Position</button>
+                    </div>
                 </div>
             </section>
 

@@ -17,7 +17,7 @@ let wordSet = null;
 let selectedTileIndex = null;   // which rack tile the position modal is open for
 let pendingSlotIndex = null;    // which rack slot the letter picker is for (null = new tile)
 let currentResults = [];
-let boardPosition = null;       // { type:'start'|'end', n:1..15 } | null — where board tiles appear in word
+let boardPosition = null;       // [{ type:'start'|'end', n:1..15 }, ...] | null — where board tiles appear in word
 
 // ─── DOM shortcuts ───────────────────────
 const $ = id => document.getElementById(id);
@@ -183,16 +183,25 @@ function buildBoardPosBtns(containerId, type) {
     const container = $(containerId);
     container.innerHTML = '';
     for (let n = 1; n <= maxN; n++) {
+        const isActive = Array.isArray(boardPosition) &&
+                         boardPosition.some(p => p.type === type && p.n === n);
         const btn = document.createElement('button');
-        btn.className = 'pos-btn' + (boardPosition && boardPosition.type === type && boardPosition.n === n ? ' active' : '');
+        btn.className = 'pos-btn' + (isActive ? ' active' : '');
         btn.textContent = labels[type][n - 1] || `${n}`;
-        btn.addEventListener('click', () => setBoardPosition(type, n));
+        btn.addEventListener('click', () => toggleBoardPosition(type, n));
         container.appendChild(btn);
     }
 }
 
-function setBoardPosition(type, n) {
-    boardPosition = { type, n };
+function toggleBoardPosition(type, n) {
+    if (!boardPosition) boardPosition = [];
+    const idx = boardPosition.findIndex(p => p.type === type && p.n === n);
+    if (idx !== -1) {
+        boardPosition.splice(idx, 1);   // toggle off
+    } else {
+        boardPosition.push({ type, n }); // toggle on
+    }
+    if (boardPosition.length === 0) boardPosition = null;
     buildBoardPosBtns('boardPosFromStart', 'start');
     buildBoardPosBtns('boardPosFromEnd',   'end');
     renderBoardTiles($('boardTilesInput').value);
@@ -220,8 +229,8 @@ function renderBoardTiles(str) {
             <span class="tile-points">${TILE_VALUES[ch] ?? 0}</span>
         </div>
     `).join('');
-    const badge = boardPosition
-        ? `<span class="board-pos-badge">${formatPos(boardPosition)}</span>`
+    const badge = boardPosition && boardPosition.length > 0
+        ? `<span class="board-pos-badge">${formatPositions(boardPosition)}</span>`
         : '';
     display.innerHTML = tileHtml + badge;
 }
@@ -462,14 +471,20 @@ function findWords(handTiles, boardStr) {
         // ── 1. Quick containment check for board tiles ────────
         let boardStart = -1;
         if (boardStr) {
-            if (boardPosition) {
-                // Constrain the exact position of the board tile sequence
-                const { type, n } = boardPosition;
-                boardStart = type === 'start'
-                    ? n - 1                                          // n=1 → index 0
-                    : word.length - boardStr.length - (n - 1);      // n=1 → ends at last letter
-                if (boardStart < 0 || boardStart + boardStr.length > word.length) continue;
-                if (word.slice(boardStart, boardStart + boardStr.length) !== boardStr) continue;
+            if (boardPosition && boardPosition.length > 0) {
+                // Board sequence must appear at any one of the selected positions
+                for (const { type, n } of boardPosition) {
+                    const candidate = type === 'start'
+                        ? n - 1
+                        : word.length - boardStr.length - (n - 1);
+                    if (candidate >= 0 &&
+                        candidate + boardStr.length <= word.length &&
+                        word.slice(candidate, candidate + boardStr.length) === boardStr) {
+                        boardStart = candidate;
+                        break;
+                    }
+                }
+                if (boardStart === -1) continue;
             } else {
                 boardStart = word.indexOf(boardStr);
                 if (boardStart === -1) continue;

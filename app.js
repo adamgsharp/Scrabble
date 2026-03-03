@@ -10,8 +10,9 @@ const TILE_VALUES = {
 };
 
 // ─── State ────────────────────────────────
-// tiles[i] = null | { letter: 'A'-'Z' | '?', position: null | { type:'start'|'end', n:1..15 } }
+// tiles[i] = null | { letter: 'A'-'Z' | '?', positions: null | [{ type:'start'|'end', n:1..15 }, ...] }
 let tiles = Array(7).fill(null);
+let suppressRackInputSync = false;  // prevents text-input ↔ rack render loop
 let wordSet = null;
 let selectedTileIndex = null;   // which rack tile the position modal is open for
 let pendingSlotIndex = null;    // which rack slot the letter picker is for (null = new tile)
@@ -27,6 +28,7 @@ const $ = id => document.getElementById(id);
 document.addEventListener('DOMContentLoaded', () => {
     buildLetterGrid();
     renderRack();
+    setupRackTextInput();
     setupBoardTilesInput();
     setupButtons();
     loadWordList();
@@ -76,6 +78,7 @@ function renderRack() {
     for (let i = 0; i < 7; i++) {
         rack.appendChild(makeTileEl(i));
     }
+    if (!suppressRackInputSync) updateRackTextInput();
 }
 
 function makeTileEl(i) {
@@ -88,11 +91,12 @@ function makeTileEl(i) {
         el.title = 'Click to add a tile';
         el.addEventListener('click', () => openLetterPicker(i));
     } else {
-        el.className = 'tile' + (t.letter === '?' ? ' blank-tile' : '') + (t.position ? ' has-position' : '');
+        const hasPos = t.positions && t.positions.length > 0;
+        el.className = 'tile' + (t.letter === '?' ? ' blank-tile' : '') + (hasPos ? ' has-position' : '');
         el.title = 'Click to set position / remove';
 
         const pts = t.letter === '?' ? '' : (TILE_VALUES[t.letter] ?? '');
-        const posLabel = t.position ? formatPos(t.position) : '';
+        const posLabel = hasPos ? formatPositions(t.positions) : '';
 
         el.innerHTML = `
             <span class="tile-letter">${t.letter === '?' ? '&nbsp;' : t.letter}</span>
@@ -104,13 +108,40 @@ function makeTileEl(i) {
     return el;
 }
 
+// Single position → short string (used by board position badge too)
 function formatPos(pos) {
     if (!pos) return '';
-    if (pos.type === 'start') {
-        const suffixes = ['','1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th','13th','14th','15th'];
-        return `#${pos.n}`;
-    }
-    return `-${pos.n}`;
+    return pos.type === 'start' ? `#${pos.n}` : `-${pos.n}`;
+}
+
+// Array of positions → compact badge label
+function formatPositions(positions) {
+    if (!positions || positions.length === 0) return '';
+    if (positions.length === 1) return formatPos(positions[0]);
+    if (positions.length <= 3) return positions.map(formatPos).join(',');
+    return `${positions.length}pos`;
+}
+
+// ─────────────────────────────────────────
+//  Rack text input (fast tile entry)
+// ─────────────────────────────────────────
+function setupRackTextInput() {
+    $('rackTypeInput').addEventListener('input', e => {
+        const raw = e.target.value.toUpperCase().replace(/[^A-Z?]/g, '').slice(0, 7);
+        e.target.value = raw;
+        suppressRackInputSync = true;
+        tiles = Array(7).fill(null);
+        for (let i = 0; i < raw.length; i++) {
+            tiles[i] = { letter: raw[i], positions: null };
+        }
+        renderRack();
+        suppressRackInputSync = false;
+        hideResults();
+    });
+}
+
+function updateRackTextInput() {
+    $('rackTypeInput').value = tiles.filter(Boolean).map(t => t.letter).join('');
 }
 
 // ─────────────────────────────────────────
@@ -218,7 +249,7 @@ function openLetterPicker(slotIndex) {
 
 function placeLetter(ch) {
     if (pendingSlotIndex === null) return;
-    tiles[pendingSlotIndex] = { letter: ch, position: null };
+    tiles[pendingSlotIndex] = { letter: ch, positions: null };
     closeLetterModal();
     renderRack();
 }
@@ -245,14 +276,14 @@ function openTileModal(i) {
         </div>
     `;
 
-    // Build position buttons (1..15 for start, 1..15 for end)
-    buildPosBtns('posFromStart', 'start', t.position);
-    buildPosBtns('posFromEnd',   'end',   t.position);
+    // Build position buttons (1..15 for start, 1..7 for end) — multi-select toggles
+    buildPosBtns('posFromStart', 'start', t.positions);
+    buildPosBtns('posFromEnd',   'end',   t.positions);
 
     $('tileModalBackdrop').style.display = 'flex';
 }
 
-function buildPosBtns(containerId, type, currentPos) {
+function buildPosBtns(containerId, type, currentPositions) {
     const labels = {
         start: ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th','13th','14th','15th'],
         end:   ['Last','2nd-last','3rd-last','4th-last','5th-last','6th-last','7th-last']
@@ -262,8 +293,10 @@ function buildPosBtns(containerId, type, currentPos) {
     container.innerHTML = '';
 
     for (let n = 1; n <= maxN; n++) {
+        const isActive = Array.isArray(currentPositions) &&
+                         currentPositions.some(p => p.type === type && p.n === n);
         const btn = document.createElement('button');
-        btn.className = 'pos-btn' + (currentPos && currentPos.type === type && currentPos.n === n ? ' active' : '');
+        btn.className = 'pos-btn' + (isActive ? ' active' : '');
         btn.textContent = labels[type][n - 1] || `${n}`;
         btn.addEventListener('click', () => setTilePosition(type, n));
         container.appendChild(btn);
@@ -272,10 +305,17 @@ function buildPosBtns(containerId, type, currentPos) {
 
 function setTilePosition(type, n) {
     if (selectedTileIndex === null) return;
-    tiles[selectedTileIndex].position = { type, n };
-    // Refresh active states
-    buildPosBtns('posFromStart', 'start', tiles[selectedTileIndex].position);
-    buildPosBtns('posFromEnd',   'end',   tiles[selectedTileIndex].position);
+    const t = tiles[selectedTileIndex];
+    if (!t.positions) t.positions = [];
+    const idx = t.positions.findIndex(p => p.type === type && p.n === n);
+    if (idx !== -1) {
+        t.positions.splice(idx, 1);   // toggle off
+    } else {
+        t.positions.push({ type, n }); // toggle on
+    }
+    if (t.positions.length === 0) t.positions = null;
+    buildPosBtns('posFromStart', 'start', t.positions);
+    buildPosBtns('posFromEnd',   'end',   t.positions);
     renderRack();
 }
 
@@ -314,7 +354,7 @@ function setupButtons() {
     $('closeTileModal').addEventListener('click', closeTileModal);
     $('clearPosBtn').addEventListener('click', () => {
         if (selectedTileIndex !== null) {
-            tiles[selectedTileIndex].position = null;
+            tiles[selectedTileIndex].positions = null;
             buildPosBtns('posFromStart', 'start', null);
             buildPosBtns('posFromEnd',   'end',   null);
             renderRack();
@@ -337,7 +377,7 @@ function setupButtons() {
     });
     $('blankTileBtn').addEventListener('click', () => {
         if (pendingSlotIndex === null) return;
-        tiles[pendingSlotIndex] = { letter: '?', position: null };
+        tiles[pendingSlotIndex] = { letter: '?', positions: null };
         closeLetterModal();
         renderRack();
     });
@@ -364,7 +404,7 @@ function randomTiles(n) {
     const picked = [];
     for (let i = 0; i < n && bag.length; i++) {
         const idx = Math.floor(Math.random() * bag.length);
-        picked.push({ letter: bag[idx], position: null });
+        picked.push({ letter: bag[idx], positions: null });
         bag.splice(idx, 1);
     }
     // Pad to n with nulls
@@ -519,18 +559,14 @@ function matchTiles(needed, available) {
  */
 function checkPositionConstraints(word, handTiles) {
     for (const t of handTiles) {
-        if (!t || !t.position || t.letter === '?') continue;
+        if (!t || !t.positions || t.positions.length === 0 || t.letter === '?') continue;
 
-        const { type, n } = t.position;
-        let requiredIdx;
-        if (type === 'start') {
-            requiredIdx = n - 1;             // 1-indexed → 0-indexed
-        } else {
-            requiredIdx = word.length - n;   // from end
-        }
-
-        if (requiredIdx < 0 || requiredIdx >= word.length) return false;
-        if (word[requiredIdx] !== t.letter) return false;
+        // ANY of the selected positions must place this letter correctly
+        const matched = t.positions.some(({ type, n }) => {
+            const idx = type === 'start' ? n - 1 : word.length - n;
+            return idx >= 0 && idx < word.length && word[idx] === t.letter;
+        });
+        if (!matched) return false;
     }
     return true;
 }

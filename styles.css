@@ -125,6 +125,36 @@ body {
 /* ─────────────────────────────────────────
    Tile Rack
 ───────────────────────────────────────── */
+.rack-type-input-row {
+    margin-bottom: 12px;
+}
+
+.rack-type-input {
+    width: 100%;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 14px;
+    font-size: 1.1rem;
+    font-family: 'Georgia', serif;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: var(--tile-text);
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.rack-type-input:focus { border-color: var(--accent); }
+
+.rack-type-input::placeholder {
+    font-weight: 400;
+    font-size: 0.88rem;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    font-family: sans-serif;
+}
+
 .rack-wrapper {
     background: var(--wood-mid);
     background-image: linear-gradient(135deg, var(--wood-light) 0%, var(--wood-mid) 40%, var(--wood-dark) 100%);
@@ -667,6 +697,13 @@ body {
     color: var(--text-muted);
     font-family: sans-serif;
     margin-bottom: 8px;
+}
+
+.position-hint {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    opacity: 0.8;
 }
 
 .position-buttons {

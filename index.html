@@ -21,7 +21,20 @@
             <section class="card">
                 <div class="section-header">
                     <h2>Your Tiles</h2>
-                    <span class="section-hint">Click a tile to set its position in the word</span>
+                    <span class="section-hint">Type below, or click tiles · click a tile to set its position</span>
+                </div>
+                <div class="rack-type-input-row">
+                    <input
+                        type="text"
+                        id="rackTypeInput"
+                        class="rack-type-input"
+                        placeholder="Type your tiles — e.g. AEILRST  or ? for blank"
+                        maxlength="7"
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="characters"
+                        spellcheck="false"
+                    >
                 </div>
                 <div class="rack-wrapper">
                     <div class="tile-rack" id="tileRack"></div>
@@ -107,11 +120,11 @@
             </div>
             <div class="modal-tile-preview" id="modalTilePreview"></div>
             <div class="position-section">
-                <p class="position-label">Position from <strong>start</strong>:</p>
+                <p class="position-label">Position from <strong>start</strong> <span class="position-hint">(tap multiple to allow either)</span>:</p>
                 <div class="position-buttons" id="posFromStart"></div>
             </div>
             <div class="position-section">
-                <p class="position-label">Position from <strong>end</strong>:</p>
+                <p class="position-label">Position from <strong>end</strong> <span class="position-hint">(tap multiple to allow either)</span>:</p>
                 <div class="position-buttons" id="posFromEnd"></div>
             </div>
             <div class="modal-footer">

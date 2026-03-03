@@ -28,10 +28,9 @@ jobs:
         run: |
           if [ ! -f words.txt ]; then
             echo "Downloading word list..."
-            curl -fsSL "https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt" \
+            curl -fsSL "https://raw.githubusercontent.com/redbo/scrabbletools/master/dictionary.txt" \
               -o /tmp/raw_words.txt \
-            && grep -E '^[a-z]{2,15}$' /tmp/raw_words.txt \
-              | tr 'a-z' 'A-Z' \
+            && grep -E '^[A-Z]{2,15}$' /tmp/raw_words.txt \
               | sort -u > words.txt \
             || echo "Download failed — app will use CDN fallback at runtime"
           fi
